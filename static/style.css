@@ -1,0 +1,36 @@
+nav .navbar-brand {
+    padding-bottom: 0%;
+}
+
+.navbar-collapse {
+    width: auto;
+}
+
+.form-header {
+    padding: 2rem 0 2rem 0;
+    text-align: center;
+}
+
+.form-box {
+    width: 50%;
+    margin: auto;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 2rem 0;
+}
+
+.table-header-name {
+    margin: 0;
+}
+
+.bg-gradient {
+    background-image: var(--bs-gradient);
+}
+
+.simple-link {
+    text-decoration: none;
+    color: white;
+}

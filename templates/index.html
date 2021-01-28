@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Main page
+{% endblock %}
+
+{% block main %}
+
+    <div class="table-header">
+        <h3 class="table-header-name">Logbook</h3>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a class="btn btn-success" href="add.html" role="button">Add ride</a>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-sm">
+            <thead class="table-light">
+                <tr>
+                <th scope="col">#</th>
+                <th scope="col">Date</th>
+                <th scope="col">Time</th>
+                <th scope="col">Vehicle</th>
+                <th scope="col">Route</th>
+                <th scope="col">Odometer</th>
+                <th scope="col">Mileage allowance</th>
+                <th scope="col">Distance</th>
+                <th scope="col">Total €</th>
+
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}
