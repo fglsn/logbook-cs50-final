@@ -1,5 +1,6 @@
 from flask import Flask, session, render_template
-from db import get_db_cursor
+from db import fetch, fetch_one, execute
+from random import randint
 
 app = Flask(__name__)
 
