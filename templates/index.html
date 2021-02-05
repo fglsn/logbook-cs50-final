@@ -9,26 +9,100 @@
     <div class="table-header">
         <h3 class="table-header-name">Logbook</h3>
         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <a class="btn btn-success" href="add.html" role="button">Add ride</a>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" role="button" data-bs-target="#add_ride">Add ride</button>
+
+            <div class="modal fade" id="add_ride" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            {% if error_message %}
+
+                                <div class="alert alert-danger" role="alert">
+                                    {{ error_message }}
+                                </div>
+
+                            {% endif %}
+                            <h5 class="modal-title" id="exampleModalLabel">Add new log to the logbook:</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form action="index" method="post">
+                            <div class="mb-3">
+                                <label for="date" class="col-form-label">Vehicle:*</label>
+                                <select class="form-select form-select-sm" aria-label=".form-select-sm example">
+                                    <option selected>Choose your vehicles</option>
+                                    <option value="1">One</option>
+                                    <option value="2">Two</option>
+                                    <option value="3">Three</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="date" class="col-form-label">Date:*</label>
+                                <input type="date" class="form-control" name="date" id="date" required>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col">
+                                    <label for="starting_time" class="col-form-label">Starting time:*</label>
+                                    <input type="time" class="form-control" id="starting_time" name="starting_time" required>
+                                </div>
+                                <div class="mb-3 col">
+                                    <label for="ending_time" class="col-form-label">Ending time:*</label>
+                                    <input type="time" class="form-control" name="ending_time" id="ending_time" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col">
+                                    <label for="starting_km" class="col-form-label">Km on start:</label>
+                                    <input type="number" class="form-control" id="starting_km" name="starting_km" required>
+                                    <div id="odometerHelp" class="form-text">Your odometer readings.</div>
+                                </div>
+                                <div class="mb-3 col">
+                                    <label for="ending_km" class="col-form-label">Km at the end:</label>
+                                    <input type="number" class="form-control" id="ending_km" name="ending_km" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col">
+                                    <label for="allowance" class="col-form-label">Mileage allowance (€/km)*</label>
+                                    <input type="number" step="0.01" class="form-control" id="allowance" name="allowance" required>
+                                </div>
+                                <div class="mb-3 col">
+                                    <label for="distance" class="col-form-label">Distance</label>
+                                    <input type="number" class="form-control" id="distance" name="distance">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="route" class="col-form-label">Route:</label>
+                                <textarea class="form-control" id="route" name="route"></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-success">Add</button>
+                            </div>
+                            </form>
+                        </div> 
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="table-responsive">
         <table class="table table-striped table-bordered table-sm">
             <thead class="table-light">
                 <tr>
-                <th scope="col">#</th>
-                <th scope="col">Date</th>
-                <th scope="col">Time</th>
-                <th scope="col">Vehicle</th>
-                <th scope="col">Route</th>
-                <th scope="col">Odometer</th>
-                <th scope="col">Mileage allowance</th>
-                <th scope="col">Distance</th>
-                <th scope="col">Total €</th>
-
+                    <th scope="col">#</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Time</th>
+                    <th scope="col">Vehicle</th>
+                    <th scope="col">Route</th>
+                    <th scope="col">Odometer</th>
+                    <th scope="col">Mileage allowance</th>
+                    <th scope="col">Distance</th>
+                    <th scope="col">Total €</th>
                 </tr>
             </thead>
             <tbody>
+
             </tbody>
         </table>
     </div>

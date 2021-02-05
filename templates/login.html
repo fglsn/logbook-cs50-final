@@ -6,6 +6,14 @@
 
 {% block main %}
 
+    {% if error_message %}
+
+    <div class="alert alert-danger" role="alert">
+        {{ error_message }}
+    </div>
+
+    {% endif %}
+
     <h3 class="form-header">Login to the LogBook</h3>
     <form action="login" method="post" class="form-box">
         <div class="mb-3">
@@ -14,7 +22,7 @@
         </div>
         <div class="mb-3">
             <label for="exampleInputPassword1" class="form-label">Password:</label>
-            <input type="password" class="form-control" id="password" name="password" autocomplete="off" type="password">
+            <input type="password" class="form-control" id="password" name="password" autocomplete="off" type="password" required>
         </div>
         <button type="submit" class="btn btn-primary">Log in</button>
     </form>
