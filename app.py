@@ -8,6 +8,8 @@ from flask_session import Session
 from tempfile import mkdtemp
 import re
 from functools import wraps
+from datetime import datetime
+import pytz 
 
 app = Flask(__name__)
 
@@ -52,7 +54,7 @@ def login():
     else:
         return render_template("login.html")
 
-#For pwd strength validation
+#For passwords strength validation
 def password_validation(password):
 
     length_error = len(password) < 8
@@ -113,12 +115,108 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+#Set timezone 
+default_timezone = pytz.timezone('Europe/Tallinn')
 
-@app.route('/', methods=["GET", "POST"])
+#Date and time parsation
+def parse_date_or_none(date_str):
+    try:
+        return datetime.strptime(date_str, '%Y-%m-%d')
+    except ValueError:
+        return None
+def parse_time_or_none(time_str):
+    try:
+        return datetime.strptime(time_str, '%H:%M')
+    except ValueError:
+        return None
+
+#Input to proper types
+def int_or_none(int_str):
+    if not int_str:
+        return None
+    try:
+        return int(int_str)
+    except ValueError:
+        return None
+def float_or_none(float_str):
+    if not float_str:
+        return None
+    try:
+        return float(float_str)
+    except ValueError:
+        return None
+
+#Format date and time to display properly on page
+def format_date(value):
+    return value.strftime('%d.%m.%Y')
+app.jinja_env.filters["format_date"] = format_date
+
+def format_time(value):
+    return value.strftime('%H:%M')
+app.jinja_env.filters["format_time"] = format_time 
+
+@app.route('/rides', methods=["GET", "POST"])
 @login_required
 def index():
-    return render_template("index.html")
-    
+    user_id = session.get("user_id")
+    vehicle_rows = fetch("SELECT reg_num, odometer, allowance FROM vehicles WHERE user_id=%(user_id)s", user_id=user_id)
+    for vehicle_row in vehicle_rows:
+        vehicle_row["allowance"] = str(vehicle_row["allowance"])
+
+    if request.method == "POST":
+        registration_number = request.form.get("vehicles")
+        log_date = parse_date_or_none(request.form.get("date"))
+        st_time = parse_time_or_none(request.form.get("starting_time"))
+        end_time = parse_time_or_none(request.form.get("ending_time"))
+        st_km = int_or_none(request.form.get("starting_km"))
+        end_km = int_or_none(request.form.get("ending_km"))
+        allowance = float_or_none(request.form.get("allowance"))
+        distance = int_or_none(request.form.get("distance"))
+        route = request.form.get("route")
+
+        if not registration_number or not log_date or not st_time or not end_time or not st_km or not distance or not allowance: 
+            return render_template("index.html", error_message="Check required fields", vehicle_rows=vehicle_rows)
+        elif allowance <= 0:
+            return render_template("index.html", error_message="Incorrect allowance value", vehicle_rows=vehicle_rows)
+
+        vehicle = fetch_one("SELECT id FROM vehicles WHERE reg_num = %(registration_number)s", registration_number=registration_number) 
+        if not vehicle: 
+            return render_template("index.html", error_message="Vehicle not recognized", vehicle_rows=vehicle_rows)
+
+        if distance <= 0 or st_km < 0 or end_km <= 0:
+            return render_template("index.html", error_message="Odometer readings or distance cannot be negative and should be more than 0 (except start)", vehicle_rows=vehicle_rows)
+
+        if not log_date:
+            return render_template("index.html", error_message="Incorrect data format, should be yyyy-mm-dd", vehicle_rows=vehicle_rows)
+        elif not st_time or not end_time:
+            return render_template("index.html", error_message="Incorrect time format, should be hh:mm", vehicle_rows=vehicle_rows)
+
+        present = datetime.now(tz=default_timezone)
+        started_at = datetime.combine(log_date, st_time.time()).astimezone(default_timezone)
+        finished_at = datetime.combine(log_date, end_time.time()).astimezone(default_timezone)
+        print(started_at, finished_at)
+        if started_at > present or finished_at > present:
+            return render_template("index.html", error_message="You can only add past rides", vehicle_rows=vehicle_rows)
+        elif started_at > finished_at: 
+            return render_template("index.html", error_message="Check start and finish times", vehicle_rows=vehicle_rows)
+
+        execute("INSERT INTO rides (vehicle_id, started_at, finished_at, odometer_start, distance, allowance, route) VALUES (%(vehicle_id)s, %(started_at)s, %(finished_at)s, %(odometer_start)s, %(distance)s, %(allowance)s, %(route)s)",
+                        vehicle_id=vehicle["id"], started_at=started_at, finished_at=finished_at, odometer_start=st_km, distance=distance, allowance=allowance, route=route)
+
+        execute("UPDATE vehicles SET odometer = %(updated_odometer)s, modified_at=now() WHERE id=%(vehicle_id)s and odometer < %(updated_odometer)s", updated_odometer=st_km + distance, vehicle_id=vehicle["id"])
+
+    rides = fetch("SELECT started_at, finished_at, odometer_start, distance, rides.allowance as allowance, route, reg_num, odometer_start + distance as odometer_finish, rides.allowance * distance as total FROM rides LEFT JOIN vehicles on rides.vehicle_id=vehicles.id WHERE user_id = %(user_id)s ORDER BY finished_at",
+                            user_id=user_id)
+
+    for ride in rides:
+        start = ride['started_at']
+        end = ride['finished_at']
+        ride['date'] = start.date()
+        ride['start'] = start.time()
+        ride['finish'] = end.time()
+
+    return render_template("index.html", vehicle_rows=vehicle_rows, rides=rides)
+
 
 #For reg.plate number validation
 def reg_num_validation(reg_num):
