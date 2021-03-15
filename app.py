@@ -107,7 +107,6 @@ def register():
 #Decorate routes to require login.
 #http://flask.pocoo.org/docs/1.0/patterns/viewdecorators/
 def login_required(f):
-   
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get("user_id") is None:
@@ -155,9 +154,17 @@ def format_time(value):
     return value.strftime('%H:%M')
 app.jinja_env.filters["format_time"] = format_time 
 
+@app.route('/', methods=["GET"])
+def index():
+    user_id = session.get("user_id")
+    if user_id:
+        return redirect("/rides")
+    else:
+        return render_template("index.html")
+
 @app.route('/rides', methods=["GET", "POST"])
 @login_required
-def index():
+def rides():
     user_id = session.get("user_id")
     vehicle_rows = fetch("SELECT reg_num, odometer, allowance FROM vehicles WHERE user_id=%(user_id)s", user_id=user_id)
     for vehicle_row in vehicle_rows:
@@ -175,30 +182,30 @@ def index():
         route = request.form.get("route")
 
         if not registration_number or not log_date or not st_time or not end_time or not st_km or not distance or not allowance: 
-            return render_template("index.html", error_message="Check required fields", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="Check required fields", vehicle_rows=vehicle_rows)
         elif allowance <= 0:
-            return render_template("index.html", error_message="Incorrect allowance value", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="Incorrect allowance value", vehicle_rows=vehicle_rows)
 
         vehicle = fetch_one("SELECT id FROM vehicles WHERE reg_num = %(registration_number)s", registration_number=registration_number) 
         if not vehicle: 
-            return render_template("index.html", error_message="Vehicle not recognized", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="Vehicle not recognized", vehicle_rows=vehicle_rows)
 
         if distance <= 0 or st_km < 0 or end_km <= 0:
-            return render_template("index.html", error_message="Odometer readings or distance cannot be negative and should be more than 0 (except start)", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="Odometer readings or distance cannot be negative and should be more than 0 (except start)", vehicle_rows=vehicle_rows)
 
         if not log_date:
-            return render_template("index.html", error_message="Incorrect data format, should be yyyy-mm-dd", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="Incorrect data format, should be yyyy-mm-dd", vehicle_rows=vehicle_rows)
         elif not st_time or not end_time:
-            return render_template("index.html", error_message="Incorrect time format, should be hh:mm", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="Incorrect time format, should be hh:mm", vehicle_rows=vehicle_rows)
 
         present = datetime.now(tz=default_timezone)
         started_at = datetime.combine(log_date, st_time.time()).astimezone(default_timezone)
         finished_at = datetime.combine(log_date, end_time.time()).astimezone(default_timezone)
         print(started_at, finished_at)
         if started_at > present or finished_at > present:
-            return render_template("index.html", error_message="You can only add past rides", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="You can only add past rides", vehicle_rows=vehicle_rows)
         elif started_at > finished_at: 
-            return render_template("index.html", error_message="Check start and finish times", vehicle_rows=vehicle_rows)
+            return render_template("rides.html", error_message="Check start and finish times", vehicle_rows=vehicle_rows)
 
         execute("INSERT INTO rides (vehicle_id, started_at, finished_at, odometer_start, distance, allowance, route) VALUES (%(vehicle_id)s, %(started_at)s, %(finished_at)s, %(odometer_start)s, %(distance)s, %(allowance)s, %(route)s)",
                         vehicle_id=vehicle["id"], started_at=started_at, finished_at=finished_at, odometer_start=st_km, distance=distance, allowance=allowance, route=route)
@@ -215,7 +222,7 @@ def index():
         ride['start'] = start.time()
         ride['finish'] = end.time()
 
-    return render_template("index.html", vehicle_rows=vehicle_rows, rides=rides)
+    return render_template("rides.html", vehicle_rows=vehicle_rows, rides=rides)
 
 
 #For reg.plate number validation
@@ -267,3 +274,9 @@ def vehicles():
                             user_id=user_id)
 
     return render_template("vehicles.html", vehicles=vehicles)
+
+
+@app.route('/logout', methods=["GET"])
+def logout():
+    session.clear()
+    return redirect("/")

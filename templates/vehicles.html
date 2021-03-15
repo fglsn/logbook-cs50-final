@@ -6,75 +6,77 @@
 
 {% block main %}
 
-    <div class="table-header">
-        <h3 class="table-header-name">Your vehicles</h3>
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <button type="button" class="btn btn-success"  data-bs-toggle="modal" role="button" data-bs-target="#add_vehicle">Add new vehicle</button>
+    <div class="container container-main">
+        <div class="table-header">
+            <h3 class="table-header-name">Your vehicles</h3>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="button" class="btn btn-success"  data-bs-toggle="modal" role="button" data-bs-target="#add_vehicle">Add new vehicle</button>
 
-            <div class="modal fade" id="add_vehicle" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" id="staticBackdrop" data-bs-backdrop="static">
-                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-                    <div class="modal-content">
-                       <div class="modal-header">
-                            <h5 class="modal-title" id="exampleModalLabel">Add new vehicle:</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        {% if error_message %}
-
-                            <div class="alert alert-danger" role="alert">
-                                {{ error_message }}
+                <div class="modal fade" id="add_vehicle" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" id="staticBackdrop" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                        <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Add new vehicle:</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
+                            {% if error_message %}
 
-                        {% endif %}
-                        <div class="modal-body">
-                            <form action="vehicles" method="post">
-                                <div class="mb-3">
-                                    <label for="reg_num" class="col-form-label">Registration number*</label>
-                                    <input type="text" class="form-control" id="reg_num" name="reg_num" placeholder="" autocomplete="off" value="{{ request.form['reg_num'] }}">
-                                    <div id="reg_numHelp" class="form-text"> ABC-123 for personal or CD-1234 / C-12345 for diplomat vehicles </div>
+                                <div class="alert alert-danger" role="alert">
+                                    {{ error_message }}
                                 </div>
-                                <div class="row">
-                                    <div class="mb-3 col">
-                                        <label for="allowance" class="col-form-label">Mileage allowance (€/km)*</label>
-                                        <input type="number" step="0.01" class="form-control" id="allowance" name="allowance" value="{{ request.form['allowance'] }}">
+
+                            {% endif %}
+                            <div class="modal-body">
+                                <form action="vehicles" method="post">
+                                    <div class="mb-3">
+                                        <label for="reg_num" class="col-form-label">Registration number*</label>
+                                        <input type="text" class="form-control" id="reg_num" name="reg_num" placeholder="" autocomplete="off" value="{{ request.form['reg_num'] }}">
+                                        <div id="reg_numHelp" class="form-text"> ABC-123 for personal or CD-1234 / C-12345 for diplomat vehicles </div>
                                     </div>
-                                    <div class="mb-3 col">
-                                        <label for="odometer" class="col-form-label">Last odometer reading*</label>
-                                        <input type="number" class="form-control" id="odometer" name="odometer" value="{{ request.form['odometer'] }}">
+                                    <div class="row">
+                                        <div class="mb-3 col">
+                                            <label for="allowance" class="col-form-label">Mileage allowance (€/km)*</label>
+                                            <input type="number" step="0.01" class="form-control" id="allowance" name="allowance" value="{{ request.form['allowance'] }}">
+                                        </div>
+                                        <div class="mb-3 col">
+                                            <label for="odometer" class="col-form-label">Last odometer reading*</label>
+                                            <input type="number" class="form-control" id="odometer" name="odometer" value="{{ request.form['odometer'] }}">
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                    <button type="submit" class="btn btn-success">Add</button>
-                                </div>
-                            </form>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-success">Add</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered table-sm">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">Registration plate</th>
-                    <th scope="col">Odometer</th>
-                    <th scope="col">Date modified</th>
-                    <th scope="col">Date added</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for vehicle in vehicles %}
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered table-sm">
+                <thead class="table-light">
                     <tr>
-                        <td>{{ vehicle.reg_num  }}</td>
-                        <td>{{ vehicle.odometer }}</td>
-                        <td>{{ vehicle.modified_at}}</td>
-                        <td>{{ vehicle.created_at }}</td>
+                        <th scope="col">Registration plate</th>
+                        <th scope="col">Odometer</th>
+                        <th scope="col">Date modified</th>
+                        <th scope="col">Date added</th>
                     </tr>
-                {% endfor %}   
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                        <tr>
+                            <td>{{ vehicle.reg_num  }}</td>
+                            <td>{{ vehicle.odometer }}</td>
+                            <td>{{ vehicle.modified_at}}</td>
+                            <td>{{ vehicle.created_at }}</td>
+                        </tr>
+                    {% endfor %}   
+                </tbody>
+            </table>
+        </div>
     </div>
 
     {% if error_message %}

@@ -14,29 +14,30 @@
     
     {% endif %}
 
+    <div class="container form-container">
+        <h4 class="form-header">Register to the LogBook <br> to create your own driving logbook</h4>
 
-    <h4 class="form-header">Register to the LogBook <br> to create your own driving logbook</h4>
-
-    <form action="register" class="form-box" method="post">
-        <div class="mb-3">
-            <label for="exampleInputEmail1" class="form-label">Email address:</label>
-            <input type="email" class="form-control" id="email" name="email" required>
-            <div id="emailHelp" class="form-text">You'll use your email-address as a login to the site.</div>
-        </div>
-        <div class="row">
-            <div class="mb-3 col">
-                <label for="exampleInputPassword1" class="form-label">Password:</label>
-                <input type="password" class="form-control" id="password" name="password" type="password" pattern="(?=^.{8,}$)(?=.*\d)(?=.*\W)(?=.*[A-Z])(?=.*[a-z]).*$" title="Must contain at least one number, upper- and lowercase letter, special character and be at least 8 characters long"  required>
-                <div id="passwordHelp" class="form-text">Your password must be at least 8 characters long, contain uppercase and lowercase letters, numbers and at least one special character.</div>
+        <form action="register" class="form-box" method="post">
+            <div class="mb-3">
+                <label for="exampleInputEmail1" class="form-label">Email address:</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+                <div id="emailHelp" class="form-text">You'll use your email-address as a login to the site.</div>
             </div>
-            <div class="mb-3 col">
-                <label for="exampleInputPassword1" class="form-label">Repeat password:</label>
-                <input type="password" class="form-control"  name="confirmation" id="confirmation" type="password">
+            <div class="row">
+                <div class="mb-3 col">
+                    <label for="exampleInputPassword1" class="form-label">Password:</label>
+                    <input type="password" class="form-control" id="password" name="password" type="password" pattern="(?=^.{8,}$)(?=.*\d)(?=.*\W)(?=.*[A-Z])(?=.*[a-z]).*$" title="Must contain at least one number, upper- and lowercase letter, special character and be at least 8 characters long"  required>
+                    <div id="passwordHelp" class="form-text">Your password must be at least 8 characters long, contain uppercase and lowercase letters, numbers and at least one special character.</div>
+                </div>
+                <div class="mb-3 col">
+                    <label for="exampleInputPassword1" class="form-label">Repeat password:</label>
+                    <input type="password" class="form-control"  name="confirmation" id="confirmation" type="password">
+                </div>
             </div>
-        </div>
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <button type="submit" class="btn btn-primary">Register</button>
-        </div>
-    </form>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">Register</button>
+            </div>
+        </form>
+    </div>
 
 {% endblock %}

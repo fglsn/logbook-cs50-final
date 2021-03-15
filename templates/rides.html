@@ -1,0 +1,196 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Main page
+{% endblock %}
+
+{% block main %}
+
+    <div class="container container-main">
+        <div class="table-header">
+            <h3 class="table-header-name">Logbook</h3>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" role="button" data-bs-target="#add_ride">Add ride</button>
+
+                <div class="modal fade" id="add_ride" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Add new log to the logbook:</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            {% if error_message %}
+
+                                <div class="alert alert-danger" role="alert">
+                                    {{ error_message }}
+                                </div>
+
+                            {% endif %}
+                            <div class="modal-body">
+                                <form action="rides" method="post">
+                                <div class="mb-3">
+                                    <label for="date" class="col-form-label">Vehicle:*</label>
+                                    <select name="vehicles" id="vehicles" class="form-select form-select-sm" aria-label=".form-select-sm example" required>
+                                        <option selected disabled>Choose your vehicles</option>
+                                        {% for vehicle_row in vehicle_rows %}
+                                            <option value="{{ vehicle_row.reg_num }}"> {{ vehicle_row.reg_num }} </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="date" class="col-form-label">Date:*</label>
+                                    <input type="date" class="form-control" name="date" id="date" required>
+                                </div>
+                                <div class="row">
+                                    <div class="mb-3 col">
+                                        <label for="starting_time" class="col-form-label">Starting time:*</label>
+                                        <input type="time" class="form-control" id="starting_time" name="starting_time" required>
+                                    </div>
+                                    <div class="mb-3 col">
+                                        <label for="ending_time" class="col-form-label">Ending time:*</label>
+                                        <input type="time" class="form-control" name="ending_time" id="ending_time" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="mb-3 col">
+                                        <label for="starting_km" class="col-form-label">Km on start:*</label>
+                                        <input type="number" class="form-control" id="starting_km" name="starting_km" required>
+                                        <div id="odometerHelp" class="form-text">Your odometer readings.</div>
+                                    </div>
+                                    <div class="mb-3 col">
+                                        <label for="ending_km" class="col-form-label">Km at the end:*</label>
+                                        <input type="number" class="form-control" id="ending_km" name="ending_km" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="mb-3 col">
+                                        <label for="allowance" class="col-form-label">Mileage allowance (€/km):*</label>
+                                        <input type="number" step="0.01" class="form-control" id="allowance" name="allowance" required>
+                                    </div>
+                                    <div class="mb-3 col">
+                                        <label for="distance" class="col-form-label">Distance:</label>
+                                        <input type="number" class="form-control" id="distance" name="distance">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="route" class="col-form-label">Route:</label>
+                                    <textarea class="form-control" id="route" name="route"></textarea>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-success">Add</button>
+                                </div>
+                                </form>
+                            </div> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th class="loop_index" scope="col">#</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Time</th>
+                        <th scope="col">Vehicle</th>
+                        <th scope="col">Odometer start</th>
+                        <th scope="col">Odometer finish</th>
+                        <th scope="col">Route</th>
+                        <th scope="col">Mileage allowance</th>
+                        <th scope="col">Distance</th>
+                        <th scope="col">Total €</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ride in rides %}
+                    <tr>
+                        <td class="loop_index">{{ loop.index }}</td>
+                        <td>{{ ride.date | format_date }}</td>
+                        <td>{{ ride.start | format_time }} - {{ ride.finish | format_time }}</td>
+                        <td>{{ ride.reg_num }}</td>
+                        <td>{{ ride.odometer_start }}</td>
+                        <td>{{ ride.odometer_finish }}</td>
+                        <td>{{ ride.route }}</td>
+                        <td>{{ ride.allowance }}</td>
+                        <td>{{ ride.distance }}</td>
+                        <td>{{ ride.total }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Set default date to "today"
+        const dateInput = document.querySelector("#date");
+        const date = new Date();
+        dateInput.value = date.getFullYear().toString() + '-' + (date.getMonth() + 1).toString().padStart(2, 0) + '-' + date.getDate().toString().padStart(2, 0);
+
+        // Set defaults to Starting time and odometer starting readings
+        const default_odometers = {{ vehicle_rows | tojson | safe }};
+
+        const vehicleSelect = document.getElementById("vehicles");
+        const startingKmInput = document.getElementById("starting_km");
+        const endingKmInput = document.getElementById("ending_km");
+        const allowanceInput = document.getElementById("allowance");
+        const distanceInput = document.getElementById("distance");
+
+        vehicleSelect.onchange = function (e) {
+            const registrationNumber = e.target.value;
+            if (!e.target.value) {
+                return;
+            }
+            let default_odometer = null;
+            for (let i = 0; i < default_odometers.length; i++) {
+                if (default_odometers[i]["reg_num"] === e.target.value) {
+                    startingKmInput.value = default_odometers[i]["odometer"];
+                    allowanceInput.value = default_odometers[i]["allowance"];
+                }
+            }
+        };
+
+        // Automatically change km on the end or distance if eather of it provided
+        startingKmInput.onchange = function (e) {
+            const start = parseInt(e.target.value, 10);
+            const end = parseInt(endingKmInput.value, 10);
+            if (!start || !end) {
+                return;
+            }
+            distanceInput.value = end - start;
+        };
+
+        endingKmInput.onchange = function (e) {
+            const start = parseInt(startingKmInput.value, 10);
+            const end = parseInt(e.target.value, 10);
+            if (!start || !end) {
+                return;
+            }
+            distanceInput.value = end - start;
+        };
+
+        distanceInput.onchange = function (e) {
+            const start = parseInt(startingKmInput.value, 10);
+            const distance = parseInt(e.target.value, 10);
+            if (!start || !distance) {
+                return;
+            }
+            endingKmInput.value = distance + start;
+        };
+
+    </script>
+
+    {% if error_message %}
+
+    <script>
+        window.onload = function() {
+            const modal = new bootstrap.Modal(document.getElementById("add_ride"));
+            modal.show();
+        }
+    </script>
+
+    {% endif %}
+
+{% endblock %}

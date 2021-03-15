@@ -2,6 +2,10 @@ nav .navbar-brand {
     padding-bottom: 0%;
 }
 
+header {
+    padding: 0 0.5rem;
+}
+
 .navbar-collapse {
     width: 100%;
 }
@@ -17,8 +21,9 @@ nav .navbar-brand {
 }
 
 .form-box {
-    width: 50%;
+    width: 85%;
     margin: auto;
+    padding-bottom: 2rem;
 }
 
 .table-header {
@@ -49,4 +54,132 @@ nav .navbar-brand {
     font-family: 'Roboto', sans-serif;
     font-size: 14px;
     color: rgb(153, 143, 143);
+}
+
+.form-container {
+    width: 60%;
+    border-radius: 30px;
+    background-color: #f8f9fa;
+    box-shadow: 7px 7px 14px #f7f7f7;
+    margin: 5rem auto;
+}
+
+.form-control {
+    border: 1px solid #6c757d2e!important;
+}
+
+.container-main {
+    width: 85%;
+}
+
+html, body {
+    height: 100%;
+    font-family: "open sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+.container-fluid {
+    padding: 0;
+}
+
+.footer {
+    flex-shrink: 0;
+}
+
+/*carousel*/
+
+.carousel-caption {
+    position: absolute;
+    right: 15%;
+    bottom: 10%;
+    left: 15%;
+    padding-top: 1.25rem;
+    padding-bottom: 1rem;
+    color: #fff;
+    text-align: left;
+}
+
+.caption-left {
+    height: 18rem;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(201, 201, 201, 0.151);
+    padding: 2.5rem 4rem 2rem 2rem;
+    border-radius: 10px 10px 10px;
+}
+
+
+.caption-txt {
+    width: 80%;
+}
+
+.sticky-btn {
+    margin-top: auto;
+}
+
+.logbook {
+    text-shadow: 0 2px 4px rgb(0 0 0 / 60%)
+}
+
+#capt {
+    padding: 0.5rem 0 0 0;
+}
+.capt-head {
+    padding: 0.5rem 0 0 0;
+    font-size: 2.5em;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.938);
+    -webkit-text-stroke: 1px rgb(255, 255, 255); 
+    text-shadow: 0 2px 4px rgb(0 0 0 / 60%)
+}
+
+.capt-btn {
+    margin: 1rem 0 0;
+}
+
+.carousel-container {
+    background-color: gray;
+}
+
+.carousel-item {
+    height: 25rem;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: 50% 50%;
+}
+
+.pic-one {
+    background-image: url(../static/carousel1.jpeg);
+}
+
+.pic-two {
+    background-image: url(../static/carousel1.jpeg);
+}
+
+.pic-three {
+    background-image: url(../static/carousel1.jpeg);
+}
+
+/*landing text*/
+
+.story-cont {
+    margin-top: 1rem;
+    flex-direction: row;
+    display: flex;
+}
+
+.story-column {
+    padding: 2rem 3rem 8rem 3rem;
+    background-color: rgba(201, 201, 201, 0.151);
+    border-radius: 10px 10px 10px;
+    margin: 2rem;
 }
