@@ -1,9 +1,34 @@
-nav .navbar-brand {
-    padding-bottom: 0%;
-}
-
+/* LAYOUT */
 header {
     padding: 0 0.5rem;
+}
+
+html {
+    height: 100%;
+    font-family: "open sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+.container-fluid {
+    padding: 0;
+}
+
+.footer {
+    flex-shrink: 0;
+}
+
+/*navbar*/
+
+.caption-left .navbar-brand {
+    padding-bottom: 0%;
 }
 
 .navbar-collapse {
@@ -15,6 +40,8 @@ header {
     justify-content: flex-end;
 }
 
+/*forms*/
+
 .form-header {
     padding: 2rem 0 2rem 0;
     text-align: center;
@@ -25,6 +52,66 @@ header {
     margin: auto;
     padding-bottom: 2rem;
 }
+
+.form-container {
+    width: 60%;
+    border-radius: 30px;
+    background-color: #f8f9fa;
+    box-shadow: 7px 7px 14px #f7f7f7;
+    margin: 5rem auto;
+}
+
+.form-control {
+    border: 1px solid #6c757d2e!important;
+}
+
+/*rides*/ 
+.container-main {
+    width: 85%;
+}
+
+.filter-form {
+    margin: 0.5rem 0 2rem 0;
+}
+
+.date-pick-cont {
+    align-items: center;
+    display: flex;
+    width: 50%;
+    margin-bottom: 2rem;
+}
+
+#reportrange {
+    background: #fff; 
+    cursor: pointer; 
+    padding: 5px 10px; 
+    border: 1px solid #ccc; 
+    width: 100%;
+    margin-left: 2rem;
+}
+
+.vehicles-check-cont {
+    display: flex;
+    margin: 2rem 0;
+}
+
+.form-check {
+    margin-left: 1rem;
+}
+
+.checkbox {
+    padding: 2rem;
+}
+
+.shorter-btn {
+    margin-left: 20rem;
+}
+
+.clean-link {
+    color: white;
+    text-decoration: none;
+}
+/*tables*/
 
 .table-header {
     display: flex;
@@ -54,44 +141,6 @@ header {
     font-family: 'Roboto', sans-serif;
     font-size: 14px;
     color: rgb(153, 143, 143);
-}
-
-.form-container {
-    width: 60%;
-    border-radius: 30px;
-    background-color: #f8f9fa;
-    box-shadow: 7px 7px 14px #f7f7f7;
-    margin: 5rem auto;
-}
-
-.form-control {
-    border: 1px solid #6c757d2e!important;
-}
-
-.container-main {
-    width: 85%;
-}
-
-html, body {
-    height: 100%;
-    font-family: "open sans","Helvetica Neue",Helvetica,Arial,sans-serif;
-  }
-
-body {
-    display: flex;
-    flex-direction: column;
-}
-
-main {
-    flex: 1 0 auto;
-}
-
-.container-fluid {
-    padding: 0;
-}
-
-.footer {
-    flex-shrink: 0;
 }
 
 /*carousel*/
@@ -151,7 +200,7 @@ main {
 }
 
 .carousel-item {
-    height: 25rem;
+    height: 30rem;
     background-repeat: no-repeat;
     background-size: cover;
     background-position: 50% 50%;
@@ -182,4 +231,5 @@ main {
     background-color: rgba(201, 201, 201, 0.151);
     border-radius: 10px 10px 10px;
     margin: 2rem;
+    width: 30%;
 }

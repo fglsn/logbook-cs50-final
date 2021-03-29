@@ -1,5 +1,5 @@
 from dbsession import DbSessionInterface
-from flask import Flask, session, render_template, redirect
+from flask import Flask, session, render_template, redirect, request
 from flask.globals import request
 from db import fetch, fetch_one, execute
 from random import randint
@@ -212,8 +212,26 @@ def rides():
 
         execute("UPDATE vehicles SET odometer = %(updated_odometer)s, modified_at=now() WHERE id=%(vehicle_id)s and odometer < %(updated_odometer)s", updated_odometer=st_km + distance, vehicle_id=vehicle["id"])
 
-    rides = fetch("SELECT started_at, finished_at, odometer_start, distance, rides.allowance as allowance, route, reg_num, odometer_start + distance as odometer_finish, rides.allowance * distance as total FROM rides LEFT JOIN vehicles on rides.vehicle_id=vehicles.id WHERE user_id = %(user_id)s ORDER BY finished_at",
-                            user_id=user_id)
+    reg_num_rows = fetch("SELECT reg_num FROM vehicles WHERE user_id = %(user_id)s",
+                            user_id=user_id)    
+    reg_nums = []
+    for reg_num_row in reg_num_rows:
+        reg_nums.append(reg_num_row["reg_num"])
+    
+    selected_reg_nums = []
+    for k, v in request.args.items():
+        if k in reg_nums and v == "on":
+            selected_reg_nums.append(k)
+    
+    if not selected_reg_nums:
+        selected_reg_nums = reg_nums
+    else:
+        for vehicle_row in vehicle_rows:
+            if vehicle_row["reg_num"] in selected_reg_nums:
+                vehicle_row["selected"] = True
+            
+    rides = fetch("SELECT started_at, finished_at, odometer_start, distance, rides.allowance as allowance, route, reg_num, odometer_start + distance as odometer_finish, rides.allowance * distance as total FROM rides LEFT JOIN vehicles on rides.vehicle_id=vehicles.id WHERE user_id = %(user_id)s and reg_num in %(selected_reg_nums)s ORDER BY finished_at",
+                            user_id=user_id, selected_reg_nums=tuple(selected_reg_nums))
 
     for ride in rides:
         start = ride['started_at']
