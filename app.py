@@ -8,7 +8,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 import re
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz 
 
 app = Flask(__name__)
@@ -212,6 +212,7 @@ def rides():
 
         execute("UPDATE vehicles SET odometer = %(updated_odometer)s, modified_at=now() WHERE id=%(vehicle_id)s and odometer < %(updated_odometer)s", updated_odometer=st_km + distance, vehicle_id=vehicle["id"])
 
+    #Apply filters 
     reg_num_rows = fetch("SELECT reg_num FROM vehicles WHERE user_id = %(user_id)s",
                             user_id=user_id)    
     reg_nums = []
@@ -229,9 +230,42 @@ def rides():
         for vehicle_row in vehicle_rows:
             if vehicle_row["reg_num"] in selected_reg_nums:
                 vehicle_row["selected"] = True
-            
-    rides = fetch("SELECT started_at, finished_at, odometer_start, distance, rides.allowance as allowance, route, reg_num, odometer_start + distance as odometer_finish, rides.allowance * distance as total FROM rides LEFT JOIN vehicles on rides.vehicle_id=vehicles.id WHERE user_id = %(user_id)s and reg_num in %(selected_reg_nums)s ORDER BY finished_at",
-                            user_id=user_id, selected_reg_nums=tuple(selected_reg_nums))
+
+    #Period filter         
+    reportrange = request.args.get("reportrange")
+
+    start_date_filter = None
+    end_date_filter = None
+    report_range_clause = ''
+    if reportrange:
+        reportrange = reportrange.split(" - ")
+        start_date_filter = reportrange[0]
+        end_date_filter = reportrange[1]
+
+        d = timedelta(days=1)
+        start_date_filter = datetime.strptime(start_date_filter, "%B %d, %Y")
+        end_date_filter = datetime.strptime(end_date_filter, "%B %d, %Y") + d
+
+        report_range_clause = 'AND (rides.started_at >= %(start_date_filter)s AND rides.finished_at < %(end_date_filter)s)'
+        
+
+        
+    rides = fetch(f"""
+                    SELECT started_at, 
+                        finished_at, 
+                        odometer_start, 
+                        distance, 
+                        rides.allowance as allowance, 
+                        route, 
+                        reg_num, 
+                        odometer_start + distance as odometer_finish, 
+                        rides.allowance * distance as total 
+                    FROM rides 
+                    LEFT JOIN vehicles on rides.vehicle_id=vehicles.id 
+                    WHERE user_id = %(user_id)s and reg_num in %(selected_reg_nums)s
+                    {report_range_clause}
+                    ORDER BY finished_at""",
+                        user_id=user_id, selected_reg_nums=tuple(selected_reg_nums), start_date_filter=start_date_filter, end_date_filter=end_date_filter)
 
     for ride in rides:
         start = ride['started_at']

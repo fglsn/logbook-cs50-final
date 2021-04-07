@@ -100,8 +100,16 @@
                     <form action="rides" method="get" class="checkbox">
                         <div class="filter-box">
                             <div class="date-pick-cont">
-                                <h5>Period:</h5>
-                                <input id="reportrange" name="reportrange">
+                                <h5 style="display: flex; align-items: flex-end;">Period:</h5>
+                                <div class="reportrangecont">
+                                    <span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" class="bi bi-calendar-check" viewBox="0 0 16 16">
+                                            <path d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
+                                            <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                                        </svg>
+                                    </span>
+                                    <input id="reportrange" name="reportrange">
+                                </div>
                             </div>
                             <div class="vehicles-check-cont">
                                 <h5>Vehicles to display:</h5>
@@ -164,7 +172,6 @@
 
         // Set defaults to Starting time and odometer starting readings
         const default_odometers = {{ vehicle_rows | tojson | safe }};
-
         const vehicleSelect = document.getElementById("vehicles");
         const startingKmInput = document.getElementById("starting_km");
         const endingKmInput = document.getElementById("ending_km");
@@ -218,12 +225,8 @@
     <script type="text/javascript">
         $(function() {
         
-            var start = moment().subtract(29, 'days');
-            var end = moment();
-        
-            function cb(start, end) {
-                $('#reportrange').val(start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY'));
-            }
+            var start = moment().startOf('year');
+            var end = moment().endOf('year');
         
             $('#reportrange').daterangepicker({
                 startDate: start,
@@ -232,17 +235,15 @@
                 'Today': [moment(), moment()],
                 'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
                 'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
                 'This Month': [moment().startOf('month'), moment().endOf('month')],
-                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                'Previous Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+                'This Year': [moment().startOf('year'), moment().endOf('year')]
                 },
                 locale: {
-                    format: 'MMMM D, YYYY'
+                    format: 'MMMM DD, YYYY'
                 }
-            }, cb);
-        
-            cb(start, end);
-        
+            });        
         });
         </script>
 
