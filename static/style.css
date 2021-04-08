@@ -149,6 +149,11 @@ main {
     color: rgb(153, 143, 143);
 }
 
+.delete {
+    border: none;
+    background-color: rgba(255, 255, 255, 0);
+}
+
 /*carousel*/
 
 .carousel-caption {
