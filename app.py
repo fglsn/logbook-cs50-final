@@ -16,46 +16,7 @@ app = Flask(__name__)
 
 app.session_interface = DbSessionInterface()
 
-
-@app.after_request
-def add_header(r):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also to cache the rendered page for 10 minutes.
-    """
-    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    r.headers["Pragma"] = "no-cache"
-    r.headers["Expires"] = "0"
-    r.headers['Cache-Control'] = 'public, max-age=0'
-    return r
-
-
-@app.route('/login', methods=["GET", "POST"])
-def login():
-
-    print('login start')
-    session.clear()
-
-    if request.method == "POST":
-
-        if not request.form.get("email"):
-            return render_template("login.html", error_message="Please provide your email address to log in")
-        
-        elif not request.form.get("password"):
-            return render_template("login.html", error_message="Please provide password")
-
-        rows = fetch("SELECT * FROM users WHERE email = %(email)s",
-                          email=request.form.get("email"))
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
-            return render_template("login.html", error_message="Invalid username and/or password")
-
-        session["user_id"] = rows[0]["id"]
-        return redirect("/")
-    
-    else:
-        return render_template("login.html")
-
-#For passwords strength validation
+#Passwords strength validation
 def password_validation(password):
 
     length_error = len(password) < 8
@@ -66,44 +27,6 @@ def password_validation(password):
     symbol_error = re.search(r"\W", password) is None
 
     return not (length_error or digit_error or uppercase_error or lowercase_error or symbol_error or ws_error)    
-
-@app.route('/register', methods=["GET", "POST"])
-def register():
-    session.clear()
-    if request.method == "GET":
-        return render_template("register.html")
-    
-    else:
-        email = request.form.get("email")
-        password = request.form.get("password")
-        confirmation = request.form.get("confirmation")
-
-        #Validate input
-        if not email:
-            return render_template("register.html", error_message="Email is required")
-        elif not password:
-            return render_template("register.html", error_message="Password is required")
-        elif not confirmation: 
-            return render_template("register.html", error_message="Please enter password confirmation")
-
-        if password != confirmation:
-            return render_template("register.html", error_message="Password confirmation doesn't match")
-        
-        if not password_validation(password):
-            return render_template("register.html", error_message="Your password is too weak")
-
-        email = email.strip().lower()
-        # Query database for username
-        rows = fetch("SELECT * FROM users WHERE email = %(email)s",
-                          email=email)
-        if rows:
-            return render_template("register.html", error_message="Account with this email address already exists, please choose another one") 
-
-        user = fetch_one("INSERT INTO users(email, hash) VALUES (%(email)s, %(hash)s) RETURNING id",
-                        email=email, hash=generate_password_hash(password))
-
-        session["user_id"] = user["id"]
-        return redirect("/vehicles")
 
 #Decorate routes to require login.
 #http://flask.pocoo.org/docs/1.0/patterns/viewdecorators/
@@ -150,10 +73,99 @@ def float_or_none(float_str):
 def format_date(value):
     return value.strftime('%d.%m.%Y')
 app.jinja_env.filters["format_date"] = format_date
-
 def format_time(value):
     return value.strftime('%H:%M')
 app.jinja_env.filters["format_time"] = format_time 
+
+#For reg.plate number validation
+def reg_num_validation(reg_num):
+    private_re=re.compile("^[A-Za-z]{3}-[0-9]{3}$")
+    diplomat_re=re.compile("^CD-[0-9]{4}$")
+    other_diplomat_re=re.compile("^C-[0-9]{5}$")
+
+    private_matches = private_re.search(reg_num) is not None
+    diplomat_matches = diplomat_re.search(reg_num) is not None
+    other_diplomat_matches = other_diplomat_re.search(reg_num) is not None
+
+    return private_matches or diplomat_matches or other_diplomat_matches    
+
+#Find all users vehicles (as registration numbers) 
+def find_vehicles_registration_numbers(user_id):
+    reg_num_rows = fetch("SELECT reg_num FROM vehicles WHERE user_id = %(user_id)s",
+                            user_id=user_id)    
+    reg_nums = []
+    for reg_num_row in reg_num_rows:
+        reg_nums.append(reg_num_row["reg_num"])
+    return reg_nums
+
+#Filter table by selecting reg.nums 
+def parse_selected_registration_numbers(request, user_registration_numbers):
+    selected_reg_nums = []
+    for k, v in request.args.items():
+        if k in user_registration_numbers and v == "on":
+            selected_reg_nums.append(k)
+    return selected_reg_nums
+
+#Filter table by selected detes
+def parse_date_filters(request):
+    reportrange = request.args.get("reportrange")
+
+    start_date_filter = None
+    end_date_filter = None
+    report_range_clause = ''
+    if reportrange:
+        reportrange = reportrange.split(" - ")
+        start_date_filter = reportrange[0]
+        end_date_filter = reportrange[1]
+
+        d = timedelta(days=1)
+        start_date_filter = datetime.strptime(start_date_filter, "%B %d, %Y")
+        end_date_filter = datetime.strptime(end_date_filter, "%B %d, %Y") + d
+        return start_date_filter, end_date_filter
+    else:
+        return None, None
+
+#Query database for rides
+def find_rides(user_id, reg_nums, start_date_filter, end_date_filter):
+    report_range_clause = ''
+    if start_date_filter:
+        report_range_clause += ' AND rides.started_at >= %(start_date_filter)s'
+    if end_date_filter:
+        report_range_clause += ' AND rides.finished_at < %(end_date_filter)s'
+        
+    if not reg_nums:
+        return []
+    return fetch(f"""
+                    SELECT rides.id,
+                        started_at, 
+                        finished_at, 
+                        odometer_start, 
+                        distance, 
+                        rides.allowance as allowance, 
+                        route, 
+                        reg_num, 
+                        odometer_start + distance as odometer_finish, 
+                        rides.allowance * distance as total 
+                    FROM rides 
+                    LEFT JOIN vehicles on rides.vehicle_id=vehicles.id 
+                    WHERE user_id = %(user_id)s and reg_num in %(reg_nums)s
+                    {report_range_clause}
+                    ORDER BY finished_at""",
+                        user_id=user_id, reg_nums=tuple(reg_nums), start_date_filter=start_date_filter, end_date_filter=end_date_filter)
+
+
+@app.after_request
+def add_header(r):
+    """
+    Add headers to both force latest IE rendering engine or Chrome Frame,
+    and also to cache the rendered page for 10 minutes.
+    """
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    r.headers['Cache-Control'] = 'public, max-age=0'
+    return r
+
 
 @app.route('/', methods=["GET"])
 def index():
@@ -162,6 +174,111 @@ def index():
         return redirect("/rides")
     else:
         return render_template("index.html")
+
+
+@app.route('/register', methods=["GET", "POST"])
+def register():
+    session.clear()
+    if request.method == "GET":
+        return render_template("register.html")
+    
+    else:
+        email = request.form.get("email")
+        password = request.form.get("password")
+        confirmation = request.form.get("confirmation")
+
+        #Validate input
+        if not email:
+            return render_template("register.html", error_message="Email is required")
+        elif not password:
+            return render_template("register.html", error_message="Password is required")
+        elif not confirmation: 
+            return render_template("register.html", error_message="Please enter password confirmation")
+
+        if password != confirmation:
+            return render_template("register.html", error_message="Password confirmation doesn't match")
+        
+        if not password_validation(password):
+            return render_template("register.html", error_message="Your password is too weak")
+
+        # Query database for username
+        email = email.strip().lower()
+        rows = fetch("SELECT * FROM users WHERE email = %(email)s",
+                        email=email) 
+
+        if rows:
+            return render_template("register.html", error_message="Account with this email address already exists, please choose another one") 
+
+        user = fetch_one("INSERT INTO users(email, hash) VALUES (%(email)s, %(hash)s) RETURNING id",
+                        email=email, hash=generate_password_hash(password))
+
+        session["user_id"] = user["id"]
+        return redirect("/vehicles")
+
+
+@app.route('/login', methods=["GET", "POST"])
+def login():
+
+    print('login start')
+    session.clear()
+
+    if request.method == "POST":
+
+        if not request.form.get("email"):
+            return render_template("login.html", error_message="Please provide your email address to log in")
+        
+        elif not request.form.get("password"):
+            return render_template("login.html", error_message="Please provide password")
+
+        rows = fetch("SELECT * FROM users WHERE email = %(email)s",
+                          email=request.form.get("email"))
+        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+            return render_template("login.html", error_message="Invalid username and/or password")
+
+        session["user_id"] = rows[0]["id"]
+        return redirect("/")
+    
+    else:
+        return render_template("login.html")
+
+
+@app.route('/vehicles', methods=["GET", "POST"])
+@login_required
+def vehicles():
+
+    user_id = session.get("user_id")
+
+    if request.method == "POST":
+        reg_num = request.form.get("reg_num")
+        allowance = request.form.get("allowance")
+        odometer = request.form.get("odometer")
+
+        if not reg_num or not allowance or not odometer:
+            return render_template("vehicles.html", error_message="Check required fields")
+        elif float(allowance) <= 0:
+            return render_template("vehicles.html", error_message="Allowance: how many € per km? Enter positive number")
+        elif int(odometer) < 0:
+            return render_template("vehicles.html", error_message="Odometer reading cannot be negative")
+        
+        if not reg_num_validation(reg_num):
+            return render_template("vehicles.html", error_message="Invalid registration number")
+        
+        reg_num = reg_num.strip().upper()
+
+        # Query database for vehicle
+        vehicle_rows = fetch("SELECT * FROM vehicles WHERE reg_num = %(reg_num)s",
+                          reg_num=reg_num)
+        if vehicle_rows:
+            return render_template("vehicles.html", error_message="Vehicle already exists") 
+
+        execute("INSERT INTO vehicles(user_id, reg_num, allowance, odometer) VALUES (%(user_id)s, %(reg_num)s, %(allowance)s, %(odometer)s)",
+                        user_id=user_id, reg_num=reg_num, allowance=allowance, odometer=odometer)
+    
+    vehicles = fetch("SELECT * FROM vehicles WHERE user_id = %(user_id)s ORDER BY modified_at",
+                            user_id=user_id)
+
+    return render_template("vehicles.html", vehicles=vehicles)
+
 
 @app.route('/rides', methods=["GET", "POST"])
 @login_required
@@ -213,17 +330,10 @@ def rides():
 
         execute("UPDATE vehicles SET odometer = %(updated_odometer)s, modified_at=now() WHERE id=%(vehicle_id)s and odometer < %(updated_odometer)s", updated_odometer=st_km + distance, vehicle_id=vehicle["id"])
 
-    #Apply filters 
-    reg_num_rows = fetch("SELECT reg_num FROM vehicles WHERE user_id = %(user_id)s",
-                            user_id=user_id)    
-    reg_nums = []
-    for reg_num_row in reg_num_rows:
-        reg_nums.append(reg_num_row["reg_num"])
+    #Apply reg.num selection filter
+    reg_nums = find_vehicles_registration_numbers(user_id)
     
-    selected_reg_nums = []
-    for k, v in request.args.items():
-        if k in reg_nums and v == "on":
-            selected_reg_nums.append(k)
+    selected_reg_nums = parse_selected_registration_numbers(request, reg_nums)
     
     if not selected_reg_nums:
         selected_reg_nums = reg_nums
@@ -232,41 +342,9 @@ def rides():
             if vehicle_row["reg_num"] in selected_reg_nums:
                 vehicle_row["selected"] = True
 
-    #Period filter         
-    reportrange = request.args.get("reportrange")
-
-    start_date_filter = None
-    end_date_filter = None
-    report_range_clause = ''
-    if reportrange:
-        reportrange = reportrange.split(" - ")
-        start_date_filter = reportrange[0]
-        end_date_filter = reportrange[1]
-
-        d = timedelta(days=1)
-        start_date_filter = datetime.strptime(start_date_filter, "%B %d, %Y")
-        end_date_filter = datetime.strptime(end_date_filter, "%B %d, %Y") + d
-
-        report_range_clause = 'AND (rides.started_at >= %(start_date_filter)s AND rides.finished_at < %(end_date_filter)s)'
-        
-    rides = fetch(f"""
-                    SELECT rides.id,
-                        started_at, 
-                        finished_at, 
-                        odometer_start, 
-                        distance, 
-                        rides.allowance as allowance, 
-                        route, 
-                        reg_num, 
-                        odometer_start + distance as odometer_finish, 
-                        rides.allowance * distance as total 
-                    FROM rides 
-                    LEFT JOIN vehicles on rides.vehicle_id=vehicles.id 
-                    WHERE user_id = %(user_id)s and reg_num in %(selected_reg_nums)s
-                    {report_range_clause}
-                    ORDER BY finished_at""",
-                        user_id=user_id, selected_reg_nums=tuple(selected_reg_nums), start_date_filter=start_date_filter, end_date_filter=end_date_filter)
-
+    #Apply period filter         
+    start_date_filter, end_date_filter = parse_date_filters(request)
+    rides = find_rides(user_id, selected_reg_nums, start_date_filter, end_date_filter)
     for ride in rides:
         start = ride['started_at']
         end = ride['finished_at']
@@ -275,56 +353,6 @@ def rides():
         ride['finish'] = end.time()
 
     return render_template("rides.html", vehicle_rows=vehicle_rows, rides=rides)
-
-#For reg.plate number validation
-def reg_num_validation(reg_num):
-    private_re=re.compile("^[A-Za-z]{3}-[0-9]{3}$")
-    diplomat_re=re.compile("^CD-[0-9]{4}$")
-    other_diplomat_re=re.compile("^C-[0-9]{5}$")
-
-    private_matches = private_re.search(reg_num) is not None
-    diplomat_matches = diplomat_re.search(reg_num) is not None
-    other_diplomat_matches = other_diplomat_re.search(reg_num) is not None
-
-    return private_matches or diplomat_matches or other_diplomat_matches    
-
-
-@app.route('/vehicles', methods=["GET", "POST"])
-@login_required
-def vehicles():
-
-    user_id = session.get("user_id")
-
-    if request.method == "POST":
-        reg_num = request.form.get("reg_num")
-        allowance = request.form.get("allowance")
-        odometer = request.form.get("odometer")
-
-        if not reg_num or not allowance or not odometer:
-            return render_template("vehicles.html", error_message="Check required fields")
-        elif float(allowance) <= 0:
-            return render_template("vehicles.html", error_message="Allowance: how many € per km? Enter positive number")
-        elif int(odometer) < 0:
-            return render_template("vehicles.html", error_message="Odometer reading cannot be negative")
-        
-        if not reg_num_validation(reg_num):
-            return render_template("vehicles.html", error_message="Invalid registration number")
-        
-        reg_num = reg_num.strip().upper()
-
-        # Query database for vehicle
-        vehicle_rows = fetch("SELECT * FROM vehicles WHERE reg_num = %(reg_num)s",
-                          reg_num=reg_num)
-        if vehicle_rows:
-            return render_template("vehicles.html", error_message="Vehicle already exists") 
-
-        execute("INSERT INTO vehicles(user_id, reg_num, allowance, odometer) VALUES (%(user_id)s, %(reg_num)s, %(allowance)s, %(odometer)s)",
-                        user_id=user_id, reg_num=reg_num, allowance=allowance, odometer=odometer)
-    
-    vehicles = fetch("SELECT * FROM vehicles WHERE user_id = %(user_id)s ORDER BY modified_at",
-                            user_id=user_id)
-
-    return render_template("vehicles.html", vehicles=vehicles)
 
 
 @app.route('/rides/<int:ride_id>/delete', methods=["POST"])
