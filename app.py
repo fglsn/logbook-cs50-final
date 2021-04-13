@@ -10,6 +10,7 @@ import re
 from functools import wraps
 from datetime import datetime, timedelta
 import pytz 
+from openpyxl import Workbook
 
 app = Flask(__name__)
 
@@ -102,7 +103,7 @@ def register():
                         email=email, hash=generate_password_hash(password))
 
         session["user_id"] = user["id"]
-        return redirect("/")
+        return redirect("/vehicles")
 
 #Decorate routes to require login.
 #http://flask.pocoo.org/docs/1.0/patterns/viewdecorators/
@@ -248,10 +249,9 @@ def rides():
 
         report_range_clause = 'AND (rides.started_at >= %(start_date_filter)s AND rides.finished_at < %(end_date_filter)s)'
         
-
-        
     rides = fetch(f"""
-                    SELECT started_at, 
+                    SELECT rides.id,
+                        started_at, 
                         finished_at, 
                         odometer_start, 
                         distance, 
@@ -275,7 +275,6 @@ def rides():
         ride['finish'] = end.time()
 
     return render_template("rides.html", vehicle_rows=vehicle_rows, rides=rides)
-
 
 #For reg.plate number validation
 def reg_num_validation(reg_num):
@@ -326,6 +325,12 @@ def vehicles():
                             user_id=user_id)
 
     return render_template("vehicles.html", vehicles=vehicles)
+
+
+@app.route('/rides/<int:ride_id>/delete', methods=["POST"])
+def delete_ride(ride_id):
+    delete_ride = execute("DELETE FROM rides WHERE rides.id = %(ride_id)s", ride_id=ride_id)
+    return redirect("/rides")
 
 
 @app.route('/logout', methods=["GET"])
