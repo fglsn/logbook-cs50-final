@@ -11,7 +11,6 @@
             <h3 class="table-header-name">Logbook</h3>
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" role="button" data-bs-target="#add_ride">Add ride</button>
-
                 <div class="modal fade" id="add_ride" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" data-bs-backdrop="static">
                     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content">
@@ -189,6 +188,7 @@
                 {% endfor %}
                 </tbody>
             </table>
+            <a type="button" class="btn btn-outline-success" role="button" href="rides/csv_export?{{query_string}}" target="_blank">Import csv</a>
         </div>
     </div>
 

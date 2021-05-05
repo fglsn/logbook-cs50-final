@@ -8,6 +8,7 @@ flask = "==1.1.2"
 psycopg2-binary = "*"
 flask-session = "*"
 pytz = "*"
+openpyxl = "*"
 
 [dev-packages]
 

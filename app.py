@@ -1,5 +1,7 @@
 from dbsession import DbSessionInterface
-from flask import Flask, session, render_template, redirect, request
+from io import StringIO
+import csv
+from flask import Flask, Response, session, render_template, redirect, request
 from flask.globals import request
 from db import fetch, fetch_one, execute
 from random import randint
@@ -15,6 +17,20 @@ from openpyxl import Workbook
 app = Flask(__name__)
 
 app.session_interface = DbSessionInterface()
+
+@app.after_request
+def add_header(r):
+    """
+    Add headers to both force latest IE rendering engine or Chrome Frame,
+    and also to cache the rendered page for 10 minutes.
+    """
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    r.headers['Cache-Control'] = 'public, max-age=0'
+    return r
+
+# --FUNCTIONS-- # 
 
 #Passwords strength validation
 def password_validation(password):
@@ -76,6 +92,8 @@ app.jinja_env.filters["format_date"] = format_date
 def format_time(value):
     return value.strftime('%H:%M')
 app.jinja_env.filters["format_time"] = format_time 
+def format_date_time(value):
+    return value.strftime('%d.%m.%Y %H:%M')
 
 #For reg.plate number validation
 def reg_num_validation(reg_num):
@@ -125,6 +143,12 @@ def parse_date_filters(request):
     else:
         return None, None
 
+# Query database for username
+def find_user(email):
+    rows = fetch("SELECT * FROM users WHERE email = %(email)s",
+                    email=email)
+    return rows
+
 #Query database for rides
 def find_rides(user_id, reg_nums, start_date_filter, end_date_filter):
     report_range_clause = ''
@@ -154,18 +178,18 @@ def find_rides(user_id, reg_nums, start_date_filter, end_date_filter):
                         user_id=user_id, reg_nums=tuple(reg_nums), start_date_filter=start_date_filter, end_date_filter=end_date_filter)
 
 
-@app.after_request
-def add_header(r):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also to cache the rendered page for 10 minutes.
-    """
-    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    r.headers["Pragma"] = "no-cache"
-    r.headers["Expires"] = "0"
-    r.headers['Cache-Control'] = 'public, max-age=0'
-    return r
+def export_rides_to_csv(rides):
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Start of the ride", "Finish", "Registration plate", "Km on start", "Km at finish", 
+        "Route explanation", "Allowance (€)", "Distance", "Tax deduction for a ride (€)"])
+    for ride in rides:
+        csvdata = [format_date_time(ride['started_at']), format_date_time(ride['finished_at']), 
+            ride['reg_num'], ride['odometer_start'], ride['odometer_finish'], ride['route'], ride['allowance'], ride['distance'], ride['total']]
+        writer.writerow(csvdata)
+    return output.getvalue()
 
+# --ENDPOINTS-- #
 
 @app.route('/', methods=["GET"])
 def index():
@@ -203,8 +227,7 @@ def register():
 
         # Query database for username
         email = email.strip().lower()
-        rows = fetch("SELECT * FROM users WHERE email = %(email)s",
-                        email=email) 
+        rows = find_user(email)
 
         if rows:
             return render_template("register.html", error_message="Account with this email address already exists, please choose another one") 
@@ -223,16 +246,17 @@ def login():
     session.clear()
 
     if request.method == "POST":
-
-        if not request.form.get("email"):
+        email = request.form.get("email")
+        password = request.form.get("password")
+        if not email:
             return render_template("login.html", error_message="Please provide your email address to log in")
         
-        elif not request.form.get("password"):
+        elif not password:
             return render_template("login.html", error_message="Please provide password")
 
-        rows = fetch("SELECT * FROM users WHERE email = %(email)s",
-                          email=request.form.get("email"))
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        rows = find_user(email)
+
+        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], password):
             return render_template("login.html", error_message="Invalid username and/or password")
 
         session["user_id"] = rows[0]["id"]
@@ -266,8 +290,8 @@ def vehicles():
         reg_num = reg_num.strip().upper()
 
         # Query database for vehicle
-        vehicle_rows = fetch("SELECT * FROM vehicles WHERE reg_num = %(reg_num)s",
-                          reg_num=reg_num)
+        vehicle_rows = fetch("SELECT * FROM vehicles WHERE reg_num = %(reg_num)s AND user_id = %(user_id)s",
+                          reg_num=reg_num, user_id=user_id)
         if vehicle_rows:
             return render_template("vehicles.html", error_message="Vehicle already exists") 
 
@@ -304,7 +328,7 @@ def rides():
         elif allowance <= 0:
             return render_template("rides.html", error_message="Incorrect allowance value", vehicle_rows=vehicle_rows)
 
-        vehicle = fetch_one("SELECT id FROM vehicles WHERE reg_num = %(registration_number)s", registration_number=registration_number) 
+        vehicle = fetch_one("SELECT id FROM vehicles WHERE reg_num = %(registration_number)s AND user_id=%(user_id)s", registration_number=registration_number, user_id=user_id) 
         if not vehicle: 
             return render_template("rides.html", error_message="Vehicle not recognized", vehicle_rows=vehicle_rows)
 
@@ -352,12 +376,41 @@ def rides():
         ride['start'] = start.time()
         ride['finish'] = end.time()
 
-    return render_template("rides.html", vehicle_rows=vehicle_rows, rides=rides)
+    return render_template("rides.html", vehicle_rows=vehicle_rows, rides=rides, query_string=request.query_string.decode('utf-8'))
+
+
+@app.route('/rides/csv_export', methods=["GET", "POST"])
+@login_required
+def rides_csv_export():
+    user_id = session.get("user_id")
+    reg_nums = find_vehicles_registration_numbers(user_id)
+    selected_reg_nums = parse_selected_registration_numbers(request, reg_nums)
+    
+    if not selected_reg_nums:
+        selected_reg_nums = reg_nums
+    start_date_filter, end_date_filter = parse_date_filters(request)
+
+    #find actual rides
+    rides = find_rides(user_id, selected_reg_nums, start_date_filter, end_date_filter)
+
+    csv_content = export_rides_to_csv(rides)
+
+    return Response(
+        csv_content,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=table_of_rides.csv"} \
+    )
+
 
 
 @app.route('/rides/<int:ride_id>/delete', methods=["POST"])
 def delete_ride(ride_id):
     delete_ride = execute("DELETE FROM rides WHERE rides.id = %(ride_id)s", ride_id=ride_id)
+    return redirect("/rides")
+
+@app.route('/vehicles/<int:vehicle_id>/delete', methods=["POST"])
+def delete_vehicle(vehicle_id):
+    delete_vehicle = execute("DELETE FROM vehicles WHERE vehicles.id = %(vehicle_id)s", vehicle_id=vehicle_id)
     return redirect("/rides")
 
 
