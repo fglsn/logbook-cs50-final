@@ -177,12 +177,17 @@ def find_rides(user_id, reg_nums, start_date_filter, end_date_filter):
                     ORDER BY finished_at""",
                         user_id=user_id, reg_nums=tuple(reg_nums), start_date_filter=start_date_filter, end_date_filter=end_date_filter)
 
+def calculate_full_deduction(rides):
+    full_deduction = 0
+    for ride in rides:
+        full_deduction = ride['total'] + full_deduction
+    return full_deduction
 
 def export_rides_to_csv(rides):
     output = StringIO()
     writer = csv.writer(output)
     writer.writerow(["Start of the ride", "Finish", "Registration plate", "Km on start", "Km at finish", 
-        "Route explanation", "Allowance (€)", "Distance", "Tax deduction for a ride (€)"])
+        "Route explanation", "Allowance (€)", "Distance (km)", "Tax deduction for a ride (€)"])
     for ride in rides:
         csvdata = [format_date_time(ride['started_at']), format_date_time(ride['finished_at']), 
             ride['reg_num'], ride['odometer_start'], ride['odometer_finish'], ride['route'], ride['allowance'], ride['distance'], ride['total']]
@@ -376,7 +381,9 @@ def rides():
         ride['start'] = start.time()
         ride['finish'] = end.time()
 
-    return render_template("rides.html", vehicle_rows=vehicle_rows, rides=rides, query_string=request.query_string.decode('utf-8'))
+    amount_of_deduction = calculate_full_deduction(rides)
+
+    return render_template("rides.html", vehicle_rows=vehicle_rows, rides=rides, query_string=request.query_string.decode('utf-8'), amount_of_deduction=amount_of_deduction)
 
 
 @app.route('/rides/csv_export', methods=["GET", "POST"])

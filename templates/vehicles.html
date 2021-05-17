@@ -59,8 +59,9 @@
             <table class="table table-striped table-bordered table-sm">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">Registration plate</th>
-                        <th scope="col">Odometer</th>
+                        <th class="loop_index" scope="col">#</th>
+                        <th scope="col">Registration plate number</th>
+                        <th scope="col">Odometer (km)</th>
                         <th scope="col">Date modified</th>
                         <th scope="col">Date added</th>
                         <th scope="col"></th>
@@ -69,6 +70,7 @@
                 <tbody>
                     {% for vehicle in vehicles %}
                         <tr>
+                            <td class="loop_index">{{ loop.index }}</td>
                             <td>{{ vehicle.reg_num  }}</td>
                             <td>{{ vehicle.odometer }}</td>
                             <td>{{ vehicle.modified_at}}</td>

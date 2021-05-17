@@ -154,6 +154,17 @@ main {
     background-color: rgba(255, 255, 255, 0);
 }
 
+tfoot {
+    color: black;
+    text-align: right;
+
+    border-radius: 0.1rem;
+}
+
+h6 {
+    margin: auto 0;
+}
+
 /*carousel*/
 
 .carousel-caption {
