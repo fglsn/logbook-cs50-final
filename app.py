@@ -196,7 +196,7 @@ def export_rides_to_csv(rides):
 
 # --ENDPOINTS-- #
 
-@app.route('/', methods=["GET"])
+@app.route('/', methods=["GET"]) 
 def index():
     user_id = session.get("user_id")
     if user_id:
@@ -418,7 +418,7 @@ def delete_ride(ride_id):
 @app.route('/vehicles/<int:vehicle_id>/delete', methods=["POST"])
 def delete_vehicle(vehicle_id):
     delete_vehicle = execute("DELETE FROM vehicles WHERE vehicles.id = %(vehicle_id)s", vehicle_id=vehicle_id)
-    return redirect("/rides")
+    return redirect("/vehicles")
 
 
 @app.route('/logout', methods=["GET"])
