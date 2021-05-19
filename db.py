@@ -1,3 +1,4 @@
+import os
 from contextlib import contextmanager
 from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extras import RealDictCursor
@@ -21,11 +22,8 @@ __POOL = None
 def __get_pool():
     global __POOL
     if not __POOL:
-        __POOL = ThreadedConnectionPool(1, 10, database='drivelog',
-                                                user='fglsn',
-                                                password='',
-                                                host='localhost',
-                                                port=5432)
+        db_url = os.environ.get('DATABASE_URL', 'postgres://fglsn:@localhost:5432/drivelog')
+        __POOL = ThreadedConnectionPool(1, 10, db_url)
     return __POOL
 
 
