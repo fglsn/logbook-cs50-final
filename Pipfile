@@ -9,6 +9,7 @@ psycopg2-binary = "*"
 flask-session = "*"
 pytz = "*"
 openpyxl = "*"
+gunicorn = "*"
 
 [dev-packages]
 
