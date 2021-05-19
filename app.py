@@ -40,7 +40,7 @@ def password_validation(password):
     digit_error = re.search(r"\d", password) is None
     uppercase_error = re.search(r"[A-Z]", password) is None
     lowercase_error = re.search(r"[a-z]", password) is None
-    symbol_error = re.search(r"\W", password) is None
+    symbol_error = re.search(r"\w", password) is None
 
     return not (length_error or digit_error or uppercase_error or lowercase_error or symbol_error or ws_error)    
 
