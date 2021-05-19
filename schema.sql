@@ -23,3 +23,17 @@ create table sessions
 	user_id bigint not null references users(id),
 	created_at timestamptz not null default now()
 );
+
+create table rides
+(
+    id bigserial primary key,
+    vehicle_id bigint NOT NULL references vehicles(id),
+    started_at timestamp with time zone NOT NULL,
+    finished_at timestamp with time zone NOT NULL,
+    odometer_start integer NOT NULL,
+    distance integer NOT NULL,
+    allowance numeric(10,2) NOT NULL,
+    route varchar,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    modified_at timestamp with time zone NOT NULL DEFAULT now()
+);
