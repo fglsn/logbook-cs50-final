@@ -2,7 +2,7 @@
 
 CS50 Final Project 2020/2021
 
-** Deployed on Heroku ** 
+**Deployed on Heroku**
 https://driving-logbook.herokuapp.com/
 
 ## Short Description:
